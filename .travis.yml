@@ -29,6 +29,7 @@ matrix:
 
 before_install:
   # clone conda install/build/upload helper scripts and make them executable
+  - echo `basename $TRAVIS_REPO_SLUG`
   - git clone https://github.com/NSLS-II/nsls2-ci ~/scripts
   - chmod +x ~/scripts/*.sh
   - export GIT_FULL_HASH=`git rev-parse HEAD`
@@ -55,3 +56,6 @@ after_success:
   - coveralls
   - codecov
   - . ~/scripts/push-docs.sh
+
+after_script:
+  - env
