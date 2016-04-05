@@ -4,62 +4,54 @@ sudo: false
 services:
   - mongodb
 
+addons:
+  apt_packages:
+      - pandoc
+
+env:
+  global:
+    - RUN_TESTS: true
+    - BUILD_DOCS: false
+    - BUILD_DOCS_BRANCH: auto-build
+    - GH_REF: github.com/ericdill/ericdill.github.io
+    - PROJ_NAME: basename $TRAVIS_REPO_SLUG
+    - secure: "M6FykrtPp0AbiDeMblKqtt+NqH765lQeZruM36vfQ418hiEmti6Zk9mdbSitw2T/32kAlHQFgw1Xt5EKUHYLGqhGaEH7UBIr8x7mXTLxAHFl3c67vHWdXY3sH9O5/svqIRPnZLNWZECrIaIHTcjiesIa2uLUKnFzYzx/By0JvOqk56xTflGFK+DlQHtGQvT7Eg2DbKNZCfssDOAqZse3Y18W6gmpyUNezIlXq7UrTHK3L9loBpZzjDhY08UDlWYOqaUIHAzLcNd29LPjjrPof+YjqU5ERWywohbzGUciuwZVRV+ufD3INuDoYzVU7ldsPWKQ9kc2DDZ4oUG1P3HwmGmemIOC/ZATmemOMwpyo+qCquTWgXAtSz+0RNujKoW+KWW7V2+FV1XOSYdTZXYXWnxxuxk4PJ9mgw/RqfI2EBmFftd34UMWqITDtLS9viUGEIYfRHgPCcZqkyXl4B1eNBvp6lDbXcTocosMrS3DTKxe16QO2fO+5/ESlltf1LnnLxc1nHK3g9gy5wwWC05oaRGEFdlbdvCuqE4O9K1FKKvm03/KBCxkKj2U79kLRaIT2YKAjxVYWQ/LTv2UMigYJcwkBomZp6lr67g/VS/FWuihqjIJnV/um+yTzqe+tPcSxWzrKwE5Ad4+oSiypt87+a7azn3T0rlFmIc/2FB6J18="
+
+python:
+  - 2.7
+  - 3.4
+  - 3.5
+
 matrix:
   include:
-    - python: 2.7
-    - python: 3.4
     - python: 3.5
+      env: BUILD_DOCS=true RUN_TESTS=false
 
 before_install:
-  # use latest because why not?
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-  - chmod +x miniconda.sh
-  - ./miniconda.sh -b -p /home/travis/mc
-  - export PATH=/home/travis/mc/bin:$PATH
-  # Set up config for MDS and FS.
-  - export MDS_HOST=localhost
-  - export MDS_DATABASE=test
-  - export MDS_TIMEZONE=US/Eastern
-  - mkdir -p /home/travis/.config/metadatastore
-  - 'echo ''port: 27017'' > /home/travis/.config/metadatastore/connection.yml'
-  - export FS_HOST=localhost
-  - export FS_DATABASE=test
-  - mkdir -p /home/travis/.config/filestore
-  - 'echo ''port: 27017'' > /home/travis/.config/filestore/connection.yml'
+  # clone conda install/build/upload helper scripts and make them executable
+  - git clone https://github.com/NSLS-II/nsls2-ci ~/scripts
+  - chmod +x ~/scripts/*.sh
+  - export GIT_FULL_HASH=`git rev-parse HEAD`
 
 install:
-  - export GIT_FULL_HASH=`git rev-parse HEAD`
-  - conda config --set always_yes true
-  - conda install "conda<4"
-  # pin to numpy < 1.10 because pandas 0.16 and numpy 1.10 do not play nice
-  - conda create -n testenv pip nose python=$TRAVIS_PYTHON_VERSION six "numpy<1.10" pandas h5py coverage jsonschema jinja2 cytoolz
+  - . ~/scripts/install-miniconda.sh
+  - . ~/scripts/make-docs-env.sh
+  - conda create -n testenv $PROJ_NAME pip nose coverage
   - source activate testenv
+  - pip install coveralls codecov
+  - conda remove --force $PROJ_NAME
   # deps needed for metadatastore/filestore
-  - conda install -n testenv pyyaml
-  # Dependencies not in official conda have been uploaded to binstar orgs.
-  - conda config --add channels lightsource2
-  - conda config --add channels soft-matter
-  - conda install mongoengine tzlocal prettytable boltons pymongo=2.9 pims tifffile doct
-  - conda install nomkl
-  # install all the pip deps
-  - pip install coveralls
-  - pip install codecov
-  # these next three will be replaced by the following two lines soon once
-  # conda-forge is activated on metadatastore, filestore and channelarchiver
-  # - conda config --add channels lightsource2-dev
-  # - conda install -n testenv metadatastore filestore channelarchiver
-  - if [ $TRAVIS_PYTHON_VERSION = "2.7" ]; then
-      pip install singledispatch;
-    fi;
-  - pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore
-  - pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore
-  - pip install https://github.com/NSLS-II/channelarchiver/zipball/master#egg=channelarchiver
+  # - pip install https://github.com/NSLS-II/metadatastore/zipball/master#egg=metadatastore
+  # - pip install https://github.com/NSLS-II/filestore/zipball/master#egg=filestore
+  # - pip install https://github.com/NSLS-II/channelarchiver/zipball/master#egg=channelarchiver
   - python setup.py install
 
 
 script:
   - python run_tests.py -v
+  - . ~/scripts/build-docs.sh
 
 after_success:
   - coveralls
   - codecov
+  - . ~/scripts/push-docs.sh
