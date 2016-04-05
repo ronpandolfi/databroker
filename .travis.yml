@@ -14,7 +14,6 @@ env:
     - BUILD_DOCS=false
     - BUILD_DOCS_BRANCH=auto-build
     - GH_REF=github.com/ericdill/ericdill.github.io
-    - PROJ_NAME=`basename $TRAVIS_REPO_SLUG`
     - secure: "M6FykrtPp0AbiDeMblKqtt+NqH765lQeZruM36vfQ418hiEmti6Zk9mdbSitw2T/32kAlHQFgw1Xt5EKUHYLGqhGaEH7UBIr8x7mXTLxAHFl3c67vHWdXY3sH9O5/svqIRPnZLNWZECrIaIHTcjiesIa2uLUKnFzYzx/By0JvOqk56xTflGFK+DlQHtGQvT7Eg2DbKNZCfssDOAqZse3Y18W6gmpyUNezIlXq7UrTHK3L9loBpZzjDhY08UDlWYOqaUIHAzLcNd29LPjjrPof+YjqU5ERWywohbzGUciuwZVRV+ufD3INuDoYzVU7ldsPWKQ9kc2DDZ4oUG1P3HwmGmemIOC/ZATmemOMwpyo+qCquTWgXAtSz+0RNujKoW+KWW7V2+FV1XOSYdTZXYXWnxxuxk4PJ9mgw/RqfI2EBmFftd34UMWqITDtLS9viUGEIYfRHgPCcZqkyXl4B1eNBvp6lDbXcTocosMrS3DTKxe16QO2fO+5/ESlltf1LnnLxc1nHK3g9gy5wwWC05oaRGEFdlbdvCuqE4O9K1FKKvm03/KBCxkKj2U79kLRaIT2YKAjxVYWQ/LTv2UMigYJcwkBomZp6lr67g/VS/FWuihqjIJnV/um+yTzqe+tPcSxWzrKwE5Ad4+oSiypt87+a7azn3T0rlFmIc/2FB6J18="
 
 python:
@@ -29,7 +28,8 @@ matrix:
 
 before_install:
   # clone conda install/build/upload helper scripts and make them executable
-  - echo `basename $TRAVIS_REPO_SLUG`
+  - export PROJ_NAME=`basename $TRAVIS_REPO_SLUG`
+  - echo $PROJ_NAME
   - git clone https://github.com/NSLS-II/nsls2-ci ~/scripts
   - chmod +x ~/scripts/*.sh
   - export GIT_FULL_HASH=`git rev-parse HEAD`
